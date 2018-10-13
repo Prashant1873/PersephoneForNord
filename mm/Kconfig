@@ -869,3 +869,7 @@ config DIRECT_SWAPPINESS
 	  echo ratio > proc/sys/vm/direct_swapiness  default_value 60
 	  cat /sys/module/memplus_core/parameters/memory_plus_enabled
 	  default_value 0
+
+config VMSTAT_INTERVAL
+	int "Default interval in seconds to update vmstat"
+	default 1
