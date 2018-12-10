@@ -406,6 +406,7 @@ enum power_supply_property {
 	/* Property to initate DPDM recovery */
 	POWER_SUPPLY_PROP_START_DPDM_RECOVERY,
 	POWER_SUPPLY_PROP_DISCONNECT_PD,
+	POWER_SUPPLY_PROP_MAX,
 };
 
 enum power_supply_type {
