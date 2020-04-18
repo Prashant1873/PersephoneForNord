@@ -91,9 +91,11 @@
 struct rq;
 struct cpuidle_state;
 
+#define CPU_NR		8
+
 extern __read_mostly bool sched_predl;
-extern unsigned int sched_capacity_margin_up[NR_CPUS];
-extern unsigned int sched_capacity_margin_down[NR_CPUS];
+extern unsigned int sched_capacity_margin_up[CPU_NR];
+extern unsigned int sched_capacity_margin_down[CPU_NR];
 
 #if defined(CONFIG_IM) || defined(CONFIG_HOUSTON)
 extern int group_show(struct seq_file *m, void *v);
