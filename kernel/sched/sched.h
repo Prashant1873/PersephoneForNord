@@ -2709,6 +2709,9 @@ enum schedutil_type {
 	ENERGY_UTIL,
 };
 
+unsigned long schedutil_freq_util(int cpu, unsigned long util,
+			          unsigned long max, enum schedutil_type type);
+
 #ifdef CONFIG_SMP
 static inline unsigned long cpu_util_cfs(struct rq *rq)
 {
@@ -3180,8 +3183,6 @@ static inline struct sched_cluster *rq_cluster(struct rq *rq)
 }
 
 static inline bool is_asym_cap_cpu(int cpu) { return false; }
-
-static inline int asym_cap_siblings(int cpu1, int cpu2) { return 0; }
 
 static inline bool asym_cap_sibling_group_has_capacity(int dst_cpu, int margin)
 {
