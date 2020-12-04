@@ -31,10 +31,15 @@ static int coresight_clk_disable_amba_probe(struct amba_device *adev,
 
 static const struct amba_id coresight_ids[] = {
 	/* ETM4 IDs */
+<<<<<<< HEAD
+=======
+	ETM4x_AMBA_ID(0x000bb95d), /* Cortex-A53 */
+>>>>>>> 7267a57086e1... GKI: hwtracing: Add a driver for disabling coresight clocks
 	ETM4x_AMBA_ID(0x000bb95e), /* Cortex-A57 */
 	ETM4x_AMBA_ID(0x000bb95a), /* Cortex-A72 */
 	ETM4x_AMBA_ID(0x000bb959), /* Cortex-A73 */
 	ETM4x_AMBA_ID(0x000bb9da), /* Cortex-A35 */
+<<<<<<< HEAD
 
 	/* sm7250-specific ids */
 	ETM4x_AMBA_ID(0x0003b968),
@@ -48,6 +53,8 @@ static const struct amba_id coresight_ids[] = {
 	ETM4x_AMBA_ID(0x000bb969),
 	ETM4x_AMBA_ID(0x000bb999),
 
+=======
+>>>>>>> 7267a57086e1... GKI: hwtracing: Add a driver for disabling coresight clocks
 	/* dynamic-replicator IDs */
 	{
 		.id = 0x000bb909,
