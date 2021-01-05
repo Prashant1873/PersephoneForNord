@@ -152,6 +152,7 @@ static int two_hundred = 200;
 unsigned long sysctl_blkdev_issue_flush_count;
 #endif
 
+static int max_swappiness = 200;
 #ifdef CONFIG_PRINTK
 static int ten_thousand = 10000;
 #endif
@@ -1816,6 +1817,7 @@ static struct ctl_table vm_table[] = {
 #else
 		.extra2		= &one_hundred,
 #endif
+		.extra2		= &max_swappiness,
 	},
 #ifdef CONFIG_DIRECT_SWAPPINESS
 	{
