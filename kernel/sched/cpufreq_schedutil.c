@@ -31,6 +31,29 @@
 #define DEFAULT_TARGET_LOAD 80
 static unsigned int default_target_loads[] = {DEFAULT_TARGET_LOAD};
 #endif
+#define DEFAULT_UP_RATE_LIMIT_LP 1000
+#define DEFAULT_UP_RATE_LIMIT_HP 1000
+#define DEFAULT_UP_RATE_LIMIT_PR 1000
+
+#define DEFAULT_DOWN_RATE_LIMIT_LP 1000
+#define DEFAULT_DOWN_RATE_LIMIT_HP 1000
+#define DEFAULT_DOWN_RATE_LIMIT_PR 1000
+
+#define DEFAULT_RTG_BOOST_FREQ_LP 0
+#define DEFAULT_RTG_BOOST_FREQ_HP 0
+#define DEFAULT_RTG_BOOST_FREQ_PR 0
+
+#define DEFAULT_HISPEED_LOAD_LP 100
+#define DEFAULT_HISPEED_LOAD_HP 100
+#define DEFAULT_HISPEED_LOAD_PR 100
+
+#define DEFAULT_HISPEED_FREQ_LP 0
+#define DEFAULT_HISPEED_FREQ_HP 0
+#define DEFAULT_HISPEED_FREQ_PR 0
+
+#define DEFAULT_PL_LP 1
+#define DEFAULT_PL_HP 1
+#define DEFAULT_PL_PR 1
 
 struct sugov_tunables {
 	struct gov_attr_set	attr_set;
@@ -799,10 +822,6 @@ static inline bool sugov_cpu_is_busy(struct sugov_cpu *sg_cpu) { return false; }
 #endif /* CONFIG_NO_HZ_COMMON */
 
 #define NL_RATIO 75
-#define DEFAULT_HISPEED_LOAD 90
-#define DEFAULT_CPU0_RTG_BOOST_FREQ 1000000
-#define DEFAULT_CPU4_RTG_BOOST_FREQ 0
-#define DEFAULT_CPU7_RTG_BOOST_FREQ 0
 static void sugov_walt_adjust(struct sugov_cpu *sg_cpu, unsigned long *util,
 			      unsigned long *max)
 {
@@ -1132,6 +1151,8 @@ static ssize_t up_rate_limit_us_store(struct gov_attr_set *attr_set,
 	struct sugov_policy *sg_policy;
 	unsigned int rate_limit_us;
 
+	return count;
+
 	if (kstrtouint(buf, 10, &rate_limit_us))
 		return -EINVAL;
 
@@ -1151,6 +1172,8 @@ static ssize_t down_rate_limit_us_store(struct gov_attr_set *attr_set,
 	struct sugov_tunables *tunables = to_sugov_tunables(attr_set);
 	struct sugov_policy *sg_policy;
 	unsigned int rate_limit_us;
+
+	return count;
 
 	if (kstrtouint(buf, 10, &rate_limit_us))
 		return -EINVAL;
@@ -1180,6 +1203,8 @@ static ssize_t hispeed_load_store(struct gov_attr_set *attr_set,
 {
 	struct sugov_tunables *tunables = to_sugov_tunables(attr_set);
 
+	return count;
+
 	if (kstrtouint(buf, 10, &tunables->hispeed_load))
 		return -EINVAL;
 
@@ -1203,6 +1228,8 @@ static ssize_t hispeed_freq_store(struct gov_attr_set *attr_set,
 	struct sugov_policy *sg_policy;
 	unsigned long hs_util;
 	unsigned long flags;
+
+	return count;
 
 	if (kstrtouint(buf, 10, &val))
 		return -EINVAL;
@@ -1235,6 +1262,8 @@ static ssize_t rtg_boost_freq_store(struct gov_attr_set *attr_set,
 	unsigned long boost_util;
 	unsigned long flags;
 
+	return count;
+
 	if (kstrtouint(buf, 10, &val))
 		return -EINVAL;
 
@@ -1261,6 +1290,8 @@ static ssize_t pl_store(struct gov_attr_set *attr_set, const char *buf,
 				   size_t count)
 {
 	struct sugov_tunables *tunables = to_sugov_tunables(attr_set);
+
+	return count;
 
 	if (kstrtobool(buf, &tunables->pl))
 		return -EINVAL;
@@ -1561,28 +1592,33 @@ static int sugov_init(struct cpufreq_policy *policy)
 		goto stop_kthread;
 	}
 
-	tunables->up_rate_limit_us = cpufreq_policy_transition_delay_us(policy);
-	tunables->down_rate_limit_us = cpufreq_policy_transition_delay_us(policy);
-	tunables->hispeed_load = DEFAULT_HISPEED_LOAD;
-	tunables->hispeed_freq = 0;
-
 #ifdef CONFIG_OPLUS_FEATURE_SUGOV_TL
 	tunables->target_loads = default_target_loads;
 	tunables->ntarget_loads = ARRAY_SIZE(default_target_loads);
 	spin_lock_init(&tunables->target_loads_lock);
 #endif /* CONFIG_OPLUS_FEATURE_SUGOV_TL */
 
-	switch (policy->cpu) {
-	default:
-	case 0:
-		tunables->rtg_boost_freq = DEFAULT_CPU0_RTG_BOOST_FREQ;
-		break;
-	case 4:
-		tunables->rtg_boost_freq = DEFAULT_CPU4_RTG_BOOST_FREQ;
-		break;
-	case 7:
-		tunables->rtg_boost_freq = DEFAULT_CPU7_RTG_BOOST_FREQ;
-		break;
+	if (cpumask_test_cpu(sg_policy->policy->cpu, cpu_lp_mask)) {
+		tunables->up_rate_limit_us = DEFAULT_UP_RATE_LIMIT_LP;
+		tunables->down_rate_limit_us = DEFAULT_DOWN_RATE_LIMIT_LP;
+		tunables->rtg_boost_freq = DEFAULT_RTG_BOOST_FREQ_LP;
+		tunables->hispeed_load = DEFAULT_HISPEED_LOAD_LP;
+		tunables->hispeed_freq = DEFAULT_HISPEED_FREQ_LP;
+		tunables->pl = DEFAULT_PL_LP;
+	} else if (cpumask_test_cpu(sg_policy->policy->cpu, cpu_perf_mask)) {
+		tunables->up_rate_limit_us = DEFAULT_UP_RATE_LIMIT_HP;
+		tunables->down_rate_limit_us = DEFAULT_DOWN_RATE_LIMIT_HP;
+		tunables->rtg_boost_freq = DEFAULT_RTG_BOOST_FREQ_HP;
+		tunables->hispeed_load = DEFAULT_HISPEED_LOAD_HP;
+		tunables->hispeed_freq = DEFAULT_HISPEED_FREQ_HP;
+		tunables->pl = DEFAULT_PL_HP;
+	} else {
+		tunables->up_rate_limit_us = DEFAULT_UP_RATE_LIMIT_PR;
+		tunables->down_rate_limit_us = DEFAULT_DOWN_RATE_LIMIT_PR;
+		tunables->rtg_boost_freq = DEFAULT_RTG_BOOST_FREQ_PR;
+		tunables->hispeed_load = DEFAULT_HISPEED_LOAD_PR;
+		tunables->hispeed_freq = DEFAULT_HISPEED_FREQ_PR;
+		tunables->pl = DEFAULT_PL_PR;
 	}
 
 	policy->governor_data = sg_policy;
