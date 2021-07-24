@@ -234,4 +234,6 @@ source "drivers/gpu/msm/Kconfig"
 source "drivers/energy_model/Kconfig"
 
 source "drivers/vibrator/Kconfig"
+
+source "drivers/tri_state_key/Kconfig"
 endmenu

@@ -191,5 +191,7 @@ obj-$(CONFIG_ESOC)              += esoc/
 obj-$(CONFIG_AW8697_HAPTIC)     += vibrator/
 obj-$(CONFIG_UNISYS_VISORBUS)	+= visorbus/
 obj-$(CONFIG_SIOX)		+= siox/
+obj-$(CONFIG_TRI_STATE_KEY)     += tri_state_key/
+
 obj-$(CONFIG_GNSS)		+= gnss/
 obj-$(CONFIG_SENSORS_SSC)	+= sensors/
