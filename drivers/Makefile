@@ -193,6 +193,6 @@ obj-$(CONFIG_UNISYS_VISORBUS)	+= visorbus/
 obj-$(CONFIG_SIOX)		+= siox/
 obj-$(CONFIG_TRI_STATE_KEY)     += tri_state_key/
 obj-y                           += oneplus/
-
+obj-y  += param_read_write/
 obj-$(CONFIG_GNSS)		+= gnss/
 obj-$(CONFIG_SENSORS_SSC)	+= sensors/
