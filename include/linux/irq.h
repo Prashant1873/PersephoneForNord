@@ -210,7 +210,12 @@ struct irq_data {
  * IRQD_CAN_RESERVE		- Can use reservation mode
  * IRQD_MSI_NOMASK_QUIRK	- Non-maskable MSI quirk for affinity change
  *				  required
+<<<<<<< HEAD
  * IRQD_PERF_CRITICAL		- IRQ is performance-critical
+=======
+ * IRQD_AFFINITY_ON_ACTIVATE	- Affinity is set on activation. Don't call
+ *				  irq_chip::irq_set_affinity() when deactivated.
+>>>>>>> 1a3bd1cb5710... Merge tag 'LA.UM.9.12.r1-12900-SMxx50.QSSI12.0' of https://source.codeaurora.org/quic/la/kernel/msm-4.19 into oneplus/SM7250_R_11.0
  */
 enum {
 	IRQD_TRIGGER_MASK		= 0xf,
@@ -235,6 +240,7 @@ enum {
 	IRQD_CAN_RESERVE		= (1 << 26),
 	IRQD_MSI_NOMASK_QUIRK		= (1 << 27),
 	IRQD_PERF_CRITICAL		= (1 << 28),
+	IRQD_AFFINITY_ON_ACTIVATE	= (1 << 29),
 };
 
 #define __irqd_to_state(d) ACCESS_PRIVATE((d)->common, state_use_accessors)
@@ -407,6 +413,16 @@ static inline void irqd_clr_msi_nomask_quirk(struct irq_data *d)
 static inline bool irqd_msi_nomask_quirk(struct irq_data *d)
 {
 	return __irqd_to_state(d) & IRQD_MSI_NOMASK_QUIRK;
+}
+
+static inline void irqd_set_affinity_on_activate(struct irq_data *d)
+{
+	__irqd_to_state(d) |= IRQD_AFFINITY_ON_ACTIVATE;
+}
+
+static inline bool irqd_affinity_on_activate(struct irq_data *d)
+{
+	return __irqd_to_state(d) & IRQD_AFFINITY_ON_ACTIVATE;
 }
 
 #undef __irqd_to_state
