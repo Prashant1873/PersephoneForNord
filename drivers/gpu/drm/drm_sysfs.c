@@ -1230,6 +1230,13 @@ static ssize_t force_screenfp_store(struct device *dev,
 	return count;
 }
 
+int oneplus_panel_status = 0;
+static ssize_t op_display_get_power_status(struct device *dev,
+				struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%d\n", oneplus_panel_status);
+}
+
 static ssize_t dimlayer_bl_en_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
