@@ -191,7 +191,7 @@ build_kernel() {
 			then
 				msg "|| Building DTBO ||"
 				python2 "/home/prashant/scripts/ufdt/libufdt/utils/src/mkdtboimg.py" \
-				create "$KERNEL_DIR/out/arch/arm64/boot/dtbo.img" --page_size=4096 "$KERNEL_DIR/out/arch/arm64/boot/dts/vendor/qcom/avicii-overlay-dvt.dtbo"
+				create "$KERNEL_DIR/out/arch/arm64/boot/dtbo.img" --page_size=4096 "$KERNEL_DIR/out/arch/arm64/boot/dts/vendor/qcom/avicii-overlay.dtbo"
 			fi
 				gen_zip
 
