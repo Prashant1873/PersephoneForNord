@@ -212,7 +212,10 @@ gen_zip() {
 ##-----------------Uploading-------------------------------##
 
 msg "|| Uploading ||"
-
+	DATE=$(date +"%Y%m%d-%H%M")
+	TELEGRAM=Telegram/telegram
+	CHANNEL_ID=-1001261511799
+	"${TELEGRAM}" -f "$(echo "$(pwd)"/AnyKernel3/*.zip)" -c "${CHANNEL_ID}" -H "nacho bc"
 	cd ..
 }
 
