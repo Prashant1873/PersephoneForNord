@@ -344,6 +344,9 @@ do_levelcheck() {
     abort " " "Unsupported Android security patch level. Aborting...";
   fi;
 }
+
+ui_print " " "Persephone kernel is now being Installed";
+
 dump_moduleinfo() {
 cat <<EOF > $1;
 name=AK3 Helper Module
@@ -496,4 +499,4 @@ if [ "$(file_getprop anykernel.sh do.cleanup)" == 1 ]; then
   cleanup;
 fi;
 
-ui_print " " " " "Done!";
+ui_print " " " " "Done! Thankyou for Installing Persephone kernel";

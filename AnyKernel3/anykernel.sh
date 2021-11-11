@@ -4,7 +4,7 @@
 ## AnyKernel setup
 # begin properties
 properties() { '
-kernel.string=Escrima-X1-Chidori by AmolAmrit @ xda-developers
+kernel.string=PersephoneKernel by Hades
 do.devicecheck=1
 do.modules=0
 do.systemless=1
