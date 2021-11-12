@@ -32,6 +32,15 @@ err() {
     exit 1
 }
 
+sendInfo() {
+  "${TELEGRAM}" -c "${CHANNEL_ID}" -H \
+      "$(
+          for POST in "${@}"; do
+              echo "${POST}"
+          done
+      )"
+}
+
 # Constants
 green='\033[01;32m'
 red='\033[01;31m'
@@ -40,6 +49,9 @@ cyan='\033[0;36m'
 yellow='\033[0;33m'
 blue='\033[0;34m'
 default='\033[0m'
+DATE=$(date +"%Y%m%d-%H%M")
+TELEGRAM=Telegram/telegram
+CHANNEL_ID=-1001261511799
 
 ##--------------------------------------------------------##
 ##----------Basic Informations and Variables--------------##
@@ -146,6 +158,11 @@ build_kernel() {
 		rm -rf out && rm -rf AnyKernel3/Image && rm -rf AnyKernel3/*.zip
 	fi
 
+	sendInfo        "<b>===============================</b>" \
+                "<b>Start Building :</b> <code>Preserver Kernel 4.19</code>" \
+                "<b>Source Branch :</b> <code>$(git rev-parse --abbrev-ref HEAD)</code>" \
+                "<b>Toolchain :</b> <code>$KBUILD_COMPILER_STRING</code>" \
+                "<b>===============================</b>"
 
 	make O=out $DEFCONFIG
 
@@ -156,7 +173,7 @@ build_kernel() {
 		MAKE+=(
 			CROSS_COMPILE=aarch64-linux-gnu- \
 			CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
-			CC=clang \
+			CC="ccache clang" \
 			AR=llvm-ar \
 			OBJDUMP=llvm-objdump \
 			STRIP=llvm-strip \
@@ -179,6 +196,7 @@ build_kernel() {
 	fi
 
 	msg "|| Started Compilation ||"
+	export PATH="/usr/lib/ccache:$PATH"
 	make -j"$PROCS" O=out \
 		NM=llvm-nm \
 		OBJCOPY=llvm-objcopy \
@@ -207,7 +225,7 @@ gen_zip() {
         mv "$KERNEL_DIR"/out/arch/arm64/boot/dtbo.img AnyKernel3
 
 	cd AnyKernel3 || exit
-	zip -r9 $ZIPNAME-$DEVICE-$DATE.zip * -x .git README.md
+	zip -r9 $ZIPNAME-A11-$DEVICE-$DATE.zip * -x .git README.md
 
 ##-----------------Uploading-------------------------------##
 
@@ -217,6 +235,13 @@ msg "|| Uploading ||"
 	TELEGRAM=Telegram/telegram
 	CHANNEL_ID=-1001261511799
 	"${TELEGRAM}" -f "$(echo "$(pwd)"/AnyKernel3/*.zip)" -c "${CHANNEL_ID}" -H "nacho bc"
+	sendInfo "<b>BUILD took $((DIFF / 60))m:$((DIFF % 60))s </b>" \
+	         "=================================" \
+			 "<b>Linux Version :</b> <code>$(cat < out/.config | grep Linux/arm64 | cut -d " " -f3)</code>" \
+             "<b>Build Date :</b> <code>$(date +"%A, %d %b %Y, %H:%M:%S")</code>" \
+	         " <b>Most recent changes are:</b> $(git log --pretty=format:'%h : %s' -15 --abbrev=7 --first-parent)"
+	sendInfo "================================="		 
+	print "$blue BUILD took $((DIFF / 60))m:$((DIFF % 60))s | Most recent changes are : \n $(git log --pretty=format:'%h : %s' -15 --abbrev=7 --first-parent)"
 }
 
 clone
