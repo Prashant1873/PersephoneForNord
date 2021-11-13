@@ -1,4 +1,4 @@
-#! /bin/bash
+7#! /bin/bash
 
  # Script For Building Android arm64 Kernel
  #
@@ -60,7 +60,7 @@ CHANNEL_ID=-1001261511799
 KERNEL_DIR=$PWD
 
 # Kernel Version
-VERSION="X1"
+VERSION="X2"
 
 # The name of the device for which the kernel is built
 #MODEL="OnePlus Nord"
