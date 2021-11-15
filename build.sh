@@ -70,7 +70,7 @@ DEVICE="avicii"
 
 # The defconfig which should be used. Get it from config.gz from
 # your device or check source
-DEFCONFIG=vendor/lito-perf_defconfig
+DEFCONFIG=persephone_defconfig
 
 # Specify compiler.
 # 'clang' or 'gcc'
@@ -105,10 +105,14 @@ DATE=$(TZ=Asia/Kolkata date +"%Y%m%d-%T")
 	if [ $COMPILER = "clang" ]
 	then
 		msg "|| Cloning Clang ||"
-		git clone --depth=1 https://github.com/AnggaR96s/GengKapak-clang.git -b 13 /home/prashant/clang-llvm
+		git clone --depth=1 https://github.com/sohamxda7/llvm-stable.git -b aosp-13.0.3 /home/prashant/clang-llvm
+        git clone https://github.com/sohamxda7/llvm-stable -b gcc64 --depth=1 /home/prashant/gcc
+        git clone https://github.com/sohamxda7/llvm-stable -b gcc32  --depth=1 /home/prashant/gcc32
 
 		# Toolchain Directory defaults to clang-llvm
 		TC_DIR=/home/prashant/clang-llvm
+		GC_DIR=/home/prashant/gcc
+		GC2_DIR=/home/prashant/gcc32
 	elif [ $COMPILER = "gcc" ]
 	then
 		msg "|| Cloning GCC 9.3.0 baremetal ||"
@@ -135,7 +139,7 @@ exports() {
 	if [ $COMPILER = "clang" ]
 	then
 		KBUILD_COMPILER_STRING=$("$TC_DIR"/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
-		PATH=$TC_DIR/bin/:$PATH
+		PATH=$TC_DIR/bin:$GC_DIR/bin:$GC2_DIR/bin:$PATH
 	elif [ $COMPILER = "gcc" ]
 	then
 		KBUILD_COMPILER_STRING=$("$GCC64_DIR"/bin/aarch64-elf-gcc --version | head -n 1)
@@ -171,12 +175,10 @@ build_kernel() {
 	if [ $COMPILER = "clang" ]
 	then
 		MAKE+=(
-			CROSS_COMPILE=aarch64-linux-gnu- \
-			CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
+                        CLANG_TRIPLE=aarch64-linux-gnu- \
+                        CROSS_COMPILE=aarch64-linux-android- \
+                        CROSS_COMPILE_ARM32=arm-linux-androideabi-
 			CC="ccache clang" \
-			AR=llvm-ar \
-			OBJDUMP=llvm-objdump \
-			STRIP=llvm-strip \
                         DTC_EXT=$KERNEL_DIR/dtc
 		)
 	elif [ $COMPILER = "gcc" ]
@@ -198,9 +200,7 @@ build_kernel() {
 	msg "|| Started Compilation ||"
 	export PATH="/usr/lib/ccache:$PATH"
 	make -j"$PROCS" O=out \
-		NM=llvm-nm \
-		OBJCOPY=llvm-objcopy \
-		LD=ld.lld "${MAKE[@]}" 2>&1
+		"${MAKE[@]}" 2>&1
 
 		if [ -f "$KERNEL_DIR"/out/arch/arm64/boot/Image ]
 	    then
