@@ -179,6 +179,9 @@ build_kernel() {
                         CROSS_COMPILE=aarch64-linux-android- \
                         CROSS_COMPILE_ARM32=arm-linux-androideabi-
 			CC="ccache clang" \
+			AR=llvm-ar \
+			OBJDUMP=llvm-objdump \
+			STRIP=llvm-strip \
                         DTC_EXT=$KERNEL_DIR/dtc
 		)
 	elif [ $COMPILER = "gcc" ]
@@ -200,7 +203,9 @@ build_kernel() {
 	msg "|| Started Compilation ||"
 	export PATH="/usr/lib/ccache:$PATH"
 	make -j"$PROCS" O=out \
-		"${MAKE[@]}" 2>&1
+		NM=llvm-nm \
+		OBJCOPY=llvm-objcopy \
+		LD=ld.lld "${MAKE[@]}" 2>&1
 
 		if [ -f "$KERNEL_DIR"/out/arch/arm64/boot/Image ]
 	    then
