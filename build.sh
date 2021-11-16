@@ -230,7 +230,7 @@ gen_zip() {
         mv "$KERNEL_DIR"/out/arch/arm64/boot/dtbo.img AnyKernel3
 
 	cd AnyKernel3 || exit
-	zip -r9 $ZIPNAME-A12-$DEVICE-$DATE.zip * -x .git README.md
+	zip -r9 $ZIPNAME-AOSP-$DEVICE-$DATE.zip * -x .git README.md
 
 ##-----------------Uploading-------------------------------##
 
