@@ -226,10 +226,10 @@ build_kernel() {
 
 gen_zip() {
 	msg "|| Zipping into a flashable zip ||"
-	mv "$KERNEL_DIR"/out/arch/arm64/boot/Image AnyKernel3
-        mv "$KERNEL_DIR"/out/arch/arm64/boot/dtbo.img AnyKernel3
-
-	cd AnyKernel3 || exit
+	cd AnyKernel3
+	mv "$KERNEL_DIR"/out/arch/arm64/boot/Image ~/nord/AnyKernel3 
+        mv "$KERNEL_DIR"/out/arch/arm64/boot/dtbo.img ~/nord/AnyKernel3
+	cp -af "$KERNEL_DIR"/init.PersSpectrum.rc init.spectrum.rc && sed -i "s/persist.spectrum.kernel.*/persist.spectrum.kernel Persephone/g" init.spectrum.rc
 	zip -r9 $ZIPNAME-A11-$DEVICE-$DATE.zip * -x .git README.md
 
 ##-----------------Uploading-------------------------------##
