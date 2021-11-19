@@ -109,24 +109,19 @@ umount_apex() {
   $BB rm -rf /apex 2>/dev/null;
 }
 mount_all() {
-  local byname mount slot system;
   if ! is_mounted /cache; then
     $BB mount /cache 2>/dev/null && UMOUNT_CACHE=1;
   fi;
   if ! is_mounted /data; then
     $BB mount /data && UMOUNT_DATA=1;
   fi;
-  (for mount in /vendor /product /system_ext /persist; do
-    $BB mount -o ro -t auto $mount;
-  done) 2>/dev/null;
+  ($BB mount -o ro -t auto /vendor;
+  $BB mount -o ro -t auto /product;
+  $BB mount -o ro -t auto /persist) 2>/dev/null;
   setup_mountpoint $ANDROID_ROOT;
   if ! is_mounted $ANDROID_ROOT; then
     $BB mount -o ro -t auto $ANDROID_ROOT 2>/dev/null;
   fi;
-  byname=bootdevice/by-name;
-  [ -d /dev/block/$byname ] || byname=$($BB find /dev/block/platform -type d -name by-name 2>/dev/null | $BB head -n1 | $BB cut -d/ -f4-);
-  [ -d /dev/block/mapper ] && byname=mapper;
-  [ -e /dev/block/$byname/system ] || slot=$(find_slot);
   case $ANDROID_ROOT in
     /system_root) setup_mountpoint /system;;
     /system)
@@ -140,24 +135,28 @@ mount_all() {
       if [ $? != 0 ]; then
         ($BB umount /system;
         $BB umount -l /system) 2>/dev/null;
-        $BB mount -o ro -t auto /dev/block/$byname/system$slot /system_root;
+        if [ -d /dev/block/mapper ]; then
+          [ -e /dev/block/mapper/system ] || local slot=$(find_slot);
+          $BB mount -o ro -t auto /dev/block/mapper/vendor$slot /vendor;
+          $BB mount -o ro -t auto /dev/block/mapper/product$slot /product 2>/dev/null;
+          $BB mount -o ro -t auto /dev/block/mapper/system$slot /system_root;
+        else
+          [ -e /dev/block/bootdevice/by-name/system ] || local slot=$(find_slot);
+          ($BB mount -o ro -t auto /dev/block/bootdevice/by-name/vendor$slot /vendor;
+          $BB mount -o ro -t auto /dev/block/bootdevice/by-name/product$slot /product;
+          $BB mount -o ro -t auto /dev/block/bootdevice/by-name/persist$slot /persist) 2>/dev/null;
+          $BB mount -o ro -t auto /dev/block/bootdevice/by-name/system$slot /system_root;
+        fi;
       fi;
     ;;
   esac;
-  [ -f /system_root/system/build.prop ] && system=/system;
-  for mount in /vendor /product /system_ext; do
-    if ! is_mounted $mount && [ -L /system$mount -o -L /system_root$system$mount ]; then
-      setup_mountpoint $mount;
-      $BB mount -o ro -t auto /dev/block/$byname$mount$slot $mount;
-    fi;
-  done;
   if is_mounted /system_root; then
     mount_apex;
-    $BB mount -o bind /system_root$system /system;
-  fi;
-  if ! is_mounted /persist && [ -e /dev/block/bootdevice/by-name/persist ]; then
-    setup_mountpoint /persist;
-    $BB mount -o ro -t auto /dev/block/bootdevice/by-name/persist /persist;
+    if [ -f /system_root/build.prop ]; then
+      $BB mount -o bind /system_root /system;
+    else
+      $BB mount -o bind /system_root/system /system;
+    fi;
   fi;
 }
 umount_all() {
@@ -173,7 +172,7 @@ umount_all() {
   fi;
   umount /vendor; # busybox umount /vendor breaks recovery on some hacky devices
   umount -l /vendor;
-  for mount in /mnt/system /mnt/vendor /product /mnt/product /system_ext /mnt/system_ext /persist; do
+  for mount in /mnt/system /mnt/vendor /product /mnt/product /persist; do
     $BB umount $mount;
     $BB umount -l $mount;
   done;
@@ -203,7 +202,7 @@ setup_env() {
   if [ ! "$(getprop 2>/dev/null)" ]; then
     getprop() {
       local propdir propfile propval;
-      for propdir in / /system_root /system /vendor /product /system_ext /odm; do
+      for propdir in / /system_root /system /vendor /odm /product; do
         for propfile in default.prop build.prop; do
           if [ "$propval" ]; then
             break 2;
@@ -234,7 +233,7 @@ restore_env() {
   unset OLD_LD_PATH OLD_LD_PRE OLD_LD_CFG;
   umount_all;
   [ -L /etc_link ] && $BB rm -rf /etc/*;
-  (for dir in /etc /apex /system_root /system /vendor /product /system_ext /persist; do
+  (for dir in /apex /system /system_root /etc; do
     if [ -L "${dir}_link" ]; then
       rmdir $dir;
       $BB mv -f ${dir}_link $dir;
@@ -275,14 +274,14 @@ do_devicecheck() {
   for testname in $(file_getprop anykernel.sh 'device.name.*'); do
     for devicename in $device $product $vendordevice $vendorproduct; do
       if [ "$devicename" == "$testname" ]; then
-        ui_print "$testname" " ";
+        ui_print "- OK ! ";
         match=1;
         break 2;
       fi;
     done;
   done;
   if [ ! "$match" ]; then
-    abort " " "Unsupported device. Aborting...";
+    abort "! Unsupported device , This Device is $devicename . Aborting... !";
   fi;
 }
 int2ver() {
@@ -297,7 +296,7 @@ int2ver() {
 do_versioncheck() {
   [ "$(file_getprop anykernel.sh supported.versions)" ] || return 1;
   local android_ver hi_ver lo_ver parsed_ver supported supported_ver;
-  ui_print "Checking Android version...";
+  ui_print "- Checking Android Version...";
   supported_ver=$(file_getprop anykernel.sh supported.versions | $BB tr -d '[:space:]');
   android_ver=$(file_getprop /system/build.prop ro.build.version.release);
   parsed_ver=$(int2ver $android_ver);
@@ -315,10 +314,11 @@ do_versioncheck() {
       fi;
     done;
   fi;
+  ui_print "- Android Version: $android_ver ";
   if [ "$supported" ]; then
-    ui_print "$android_ver" " ";
+	ui_print "- OK !";
   else
-    abort " " "Unsupported Android version. Aborting...";
+    abort "! Unsupported Android version, This Kernel is only for Android $supported_ver . Aborting... !";
   fi;
 }
 do_levelcheck() {
@@ -339,14 +339,11 @@ do_levelcheck() {
     hi_lvl=9999-99;
   fi;
   if echo -e "$hi_lvl\n$lo_lvl\n$parsed_lvl" | $BB sort -g | $BB grep -n "$parsed_lvl" | $BB grep -q '^2:'; then
-    ui_print "$android_lvl" " ";
+    ui_print ">> $android_lvl <<";
   else
-    abort " " "Unsupported Android security patch level. Aborting...";
+    abort "! Unsupported Android security patch level. Aborting... !";
   fi;
 }
-
-ui_print " " "Persephone kernel is now being Installed";
-
 dump_moduleinfo() {
 cat <<EOF > $1;
 name=AK3 Helper Module
@@ -371,7 +368,7 @@ do_modules() {
   if [ "$(file_getprop anykernel.sh do.systemless)" == 1 ]; then
     cd $AKHOME/modules;
     ui_print " " "Creating kernel helper Magisk module...";
-    if [ -d /data/adb/magisk -a -f $AKHOME/magisk_patched ]; then
+    if [ -d /data/adb/magisk -a -f $AKHOME/split_img/.magisk ]; then
       umask=$(umask);
       umask 022;
       moddir=/data/adb/modules/ak3-helper;
@@ -434,6 +431,64 @@ do_modules() {
   cd $AKHOME;
 }
 
+AddSpectrum(){
+  cd $AKHOME;
+  # custom script for spectrum
+  $BB mount -o rw,remount -t auto /system;
+  $BB mount -o rw,remount -t auto /vendor 2>/dev/null;
+
+  # add spectrum support
+  if [ -e $AKHOME/init.spectrum.rc ];then
+  ui_print "- Backing up Old Script in Progress...";
+    if [ ! -e /vendor/etc/init/hw/init.qcom.rc.backup ];then
+      cp -af /vendor/etc/init/hw/init.qcom.rc /vendor/etc/init/hw/init.qcom.rc.backup
+    fi
+    if [ ! -e /vendor/etc/init/hw/init.spectrum.rc.backup ];then
+      cp -af /vendor/etc/init/hw/init.spectrum.rc /vendor/etc/init/hw/init.spectrum.rc.backup
+    fi
+	ui_print "- Patching init.qcom.rc...";
+    grep "import /init.spectrum.rc" /vendor/etc/init/hw/init.qcom.rc >/dev/null | sed -i '/import \/init.spectrum.rc/d' /vendor/etc/init/hw/init.qcom.rc
+    grep "import init.spectrum.rc" /vendor/etc/init/hw/init.qcom.rc >/dev/null | sed -i '/import init.spectrum.rc/d' /vendor/etc/init/hw/init.qcom.rc
+    grep "import /vendor/etc/init/hw/init.spectrum.rc" /vendor/etc/init/hw/init.qcom.rc >/dev/null || sed -i '1,/.*import.*/s/.*import.*/import \/vendor\/etc\/init\/hw\/init.spectrum.rc\n&/' /vendor/etc/init/hw/init.qcom.rc
+    ui_print "- Patching Spectrum Script...";
+	cp -af $AKHOME/init.spectrum.rc /vendor/etc/init/hw/
+    chmod -R 644 /vendor/etc/init/hw/init.spectrum.rc
+    # cprofile remover
+    if [ -e /system/xbin/cprofile ];then
+      rm -rf /system/xbin/cprofile
+      ui_print "remove /system/xbin/cprofile"
+    fi
+    if [ -e /system/bin/cprofile ];then
+      rm -rf /system/bin/cprofile
+      ui_print "remove /system/bin/cprofile"
+    fi
+    if [ -e /vendor/bin/cprofile ];then
+      rm -rf /vendor/bin/cprofile
+      ui_print "remove /vendor/bin/cprofile"
+    fi
+    if [ -e /system/init.spectrum.rc ];then
+      rm -rf /system/init.spectrum.rc
+      ui_print "remove /system/init.spectrum.rc"
+    fi
+    if [ -e /system/init.spectrum.sh ];then
+      rm -rf /system/init.spectrum.sh
+      ui_print "remove /system/init.spectrum.sh"
+    fi
+  else
+    if [ -e /vendor/etc/init/hw/init.spectrum.rc ];then
+      rm -rf /vendor/etc/init/hw/init.spectrum.rc
+	  ui_print "- Removing old Spectrum Script..."
+    fi
+    if [ -e /vendor/etc/init/hw/init.qcom.rc.backup ];then
+      cp -af /vendor/etc/init/hw/init.qcom.rc.backup /vendor/etc/init/hw/init.qcom.rc
+      rm -rf /vendor/etc/init/hw/init.qcom.rc.backup
+      grep "import /vendor/etc/init/hw/init.spectrum.rc" /vendor/etc/init/hw/init.qcom.rc >/dev/null | sed -i '/import \/vendor\/etc\/init\/hw\/init.spectrum.rc/d' /vendor/etc/init/hw/init.qcom.rc
+    fi
+  fi
+  $BB mount -o ro,remount -t auto /system;
+  $BB mount -o ro,remount -t auto /vendor 2>/dev/null;
+}
+
 show_progress 1.34 4;
 ui_print " ";
 cleanup;
@@ -464,25 +519,38 @@ fi;
 
 if [ -f banner ]; then
   ui_printfile banner;
-  ui_print " " " ";
+  ui_print " ";
 fi;
 
 KERNEL_STRING="$(file_getprop anykernel.sh kernel.string)";
-ui_print "$KERNEL_STRING";
+KERNEL_FOR="$(file_getprop anykernel.sh kernel.for)";
+KERNEL_COMPILER="$(file_getprop anykernel.sh kernel.compiler)";
+KERNEL_MADE="$(file_getprop anykernel.sh kernel.made)";
+KERNEL_VERSION="$(file_getprop anykernel.sh kernel.version)";
+BUILD_DATE="$(file_getprop anykernel.sh build.date)";
+MESSAGE_WORD="$(file_getprop anykernel.sh message.word)";
+DEVICE_NAME="$(file_getprop anykernel.sh device.name3)";
+ui_print "-- Kernel Name    : $KERNEL_STRING";
+ui_print "-- Kernel Version : $KERNEL_VERSION";
+ui_print "-- Variant        : $KERNEL_FOR";
+ui_print "-- Compiler       : $KERNEL_COMPILER";
+ui_print "-- Device         : $DEVICE_NAME";
+ui_print "-- Build Date     : $BUILD_DATE";
+ui_print "-- Build by       : $KERNEL_MADE";
+ui_print "_________________________________________________" " ";
 if [ -f version ]; then
   ui_print " ";
   ui_printfile version;
   ui_print " ";
 fi;
-ui_print " " "AnyKernel3 by osm0sis @ xda-developers" " " " ";
-
+ui_print "- Preparing Environment Setup ...";
 setup_env;
 
 do_devicecheck;
 do_versioncheck;
 do_levelcheck;
 
-ui_print "Installing...";
+ui_print "Flashing Persephone Kernel...";
 CORE=$($BB grep -oE 'ak.*core.sh' anykernel.sh);
 [ -f tools/$CORE ] || $BB ln -s $AKHOME/tools/ak*-core.sh $AKHOME/tools/$CORE;
 PATH="$AKHOME/bin:$PATH" home=$AKHOME $BB ash anykernel.sh $2;
@@ -492,11 +560,15 @@ fi;
 
 do_modules;
 
+# custom script for add spectrum support to kernel
+AddSpectrum;
+
 debugging;
 restore_env;
-
 if [ "$(file_getprop anykernel.sh do.cleanup)" == 1 ]; then
   cleanup;
 fi;
 
-ui_print " " " " "Done! Thankyou for Installing Persephone kernel";
+ui_print "- Done";
+ui_print " " "_________________________________________________";
+ui_print " " "$MESSAGE_WORD" "_________________________________________________" " ";

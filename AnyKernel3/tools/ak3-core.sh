@@ -155,7 +155,7 @@ unpack_ramdisk() {
   if [ -f ramdisk.cpio ]; then
     comp=$($bin/magiskboot decompress ramdisk.cpio 2>&1 | grep -v 'raw' | sed -n 's;.*\[\(.*\)\];\1;p');
   else
-    echo "No ramdisk found to unpack. But not aborting :)...";
+    abort "No ramdisk found to unpack. Aborting...";
   fi;
   if [ "$comp" ]; then
     mv -f ramdisk.cpio ramdisk.cpio.$comp;
@@ -173,7 +173,7 @@ unpack_ramdisk() {
   cd $ramdisk;
   EXTRACT_UNSAFE_SYMLINKS=1 cpio -d -F $split_img/ramdisk.cpio -i;
   if [ $? != 0 -o ! "$(ls)" ]; then
-    echo "Unpacking ramdisk failed. But not aborting :)...";
+    abort "Unpacking ramdisk failed. Aborting...";
   fi;
   if [ -d "$home/rdtmp" ]; then
     cp -af $home/rdtmp/* .;
@@ -224,7 +224,7 @@ repack_ramdisk() {
     fi;
   fi;
   if [ "$packfail" ]; then
-    echo "Repacking ramdisk failed. But not aborting :)...";
+    abort "Repacking ramdisk failed. Aborting...";
   fi;
 
   if [ -f "$bin/mkmtkhdr" -a -f "$split_img/boot.img-base" ]; then
@@ -319,7 +319,9 @@ flash_boot() {
           magisk_patched=$?;
         fi;
         if [ $((magisk_patched & 3)) -eq 1 ]; then
-          ui_print " " "Magisk detected! Patching kernel so reflashing Magisk is not necessary...";
+          ui_print " " "! Magisk Detected !";
+		  ui_print "! Patching Method started. So you need not worry about flashing Magisk again :) !";
+		  ui_print "- Patching Kernel..." " ";
           comp=$($bin/magiskboot decompress kernel 2>&1 | grep -v 'raw' | sed -n 's;.*\[\(.*\)\];\1;p');
           ($bin/magiskboot split $kernel || $bin/magiskboot decompress $kernel kernel) 2>/dev/null;
           if [ $? != 0 -a "$comp" ]; then
@@ -360,7 +362,6 @@ flash_boot() {
   if [ $? != 0 ]; then
     abort "Repacking image failed. Aborting...";
   fi;
-  [ -f .magisk ] && touch $home/magisk_patched;
 
   cd $home;
   if [ -f "$bin/futility" -a -d "$bin/chromeos" ]; then
@@ -419,13 +420,12 @@ flash_dtbo() {
     fi;
   done;
 
-  if [ "$dtbo" -a ! -f dtbo_flashed ]; then
+  if [ "$dtbo" ]; then
     dtboblock=/dev/block/bootdevice/by-name/dtbo$slot;
     if [ ! -e "$dtboblock" ]; then
       abort "dtbo partition could not be found. Aborting...";
     fi;
     blockdev --setrw $dtboblock 2>/dev/null;
-    ui_print " " "$dtboblock";
     if [ -f "$bin/flash_erase" -a -f "$bin/nandwrite" ]; then
       $bin/flash_erase $dtboblock 0 0;
       $bin/nandwrite -p $dtboblock $dtbo;
@@ -438,7 +438,6 @@ flash_dtbo() {
     if [ $? != 0 ]; then
       abort "Flashing dtbo failed. Aborting...";
     fi;
-    touch dtbo_flashed;
   fi;
 }
 ### write_boot (repack ramdisk then build, sign and write image and dtbo)
@@ -657,11 +656,9 @@ reset_ak() {
 
   current=$(dirname $home/*-files/current);
   if [ -d "$current" ]; then
-    for i in $bootimg $home/boot-new.img; do
+    rm -rf $current/ramdisk;
+    for i in $bootimg boot-new.img; do
       [ -e $i ] && cp -af $i $current;
-    done;
-    for i in $current/*; do
-      [ -f $i ] && rm -f $home/$(basename $i);
     done;
   fi;
   [ -d $split_img ] && rm -rf $ramdisk;
@@ -672,15 +669,23 @@ reset_ak() {
   else
     rm -rf $patch $home/rdtmp;
   fi;
-  if [ ! "$no_block_display" ]; then
-    ui_print " ";
-  fi;
   setup_ak;
 }
 
 # setup_ak
 setup_ak() {
   local blockfiles parttype name part mtdmount mtdpart mtdname target;
+
+  # allow multi-partition ramdisk modifying configurations (using reset_ak)
+  if [ "$block" ] && [ ! -d "$ramdisk" -a ! -d "$patch" ]; then
+    blockfiles=$home/$(basename $block)-files;
+    if [ "$(ls $blockfiles 2>/dev/null)" ]; then
+      cp -af $blockfiles/* $home;
+    else
+      mkdir -p $blockfiles;
+    fi;
+    touch $blockfiles/current;
+  fi;
 
   # slot detection enabled by is_slot_device=1 or auto (from anykernel.sh)
   case $is_slot_device in
@@ -706,45 +711,20 @@ setup_ak() {
         esac;
       fi;
       if [ ! "$slot" -a "$is_slot_device" == 1 ]; then
-        abort "Unable to determine active slot. Aborting...";
+        abort "Unable to determine active boot slot. Aborting...";
       fi;
     ;;
   esac;
-
-  # automate simple multi-partition setup for boot_img_hdr_v3 + vendor_boot
-  cd $home;
-  if [ -e "/dev/block/bootdevice/by-name/vendor_boot$slot" -a ! -f vendor_setup ] && [ -f dtb -o -d vendor_ramdisk -o -d vendor_patch ]; then
-    echo "Setting up for simple automatic vendor_boot flashing..." >&2;
-    (mkdir boot-files;
-    mv -f Image* ramdisk patch boot-files;
-    mkdir vendor_boot-files;
-    mv -f dtb vendor_boot-files;
-    mv -f vendor_ramdisk vendor_boot-files/ramdisk;
-    mv -f vendor_patch vendor_boot-files/patch) 2>/dev/null;
-    touch vendor_setup;
-  fi;
-
-  # allow multi-partition ramdisk modifying configurations (using reset_ak)
-  if [ "$block" ] && [ ! -d "$ramdisk" -a ! -d "$patch" ]; then
-    blockfiles=$home/$(basename $block)-files;
-    if [ "$(ls $blockfiles 2>/dev/null)" ]; then
-      cp -af $blockfiles/* $home;
-    else
-      mkdir $blockfiles;
-    fi;
-    touch $blockfiles/current;
-  fi;
 
   # target block partition detection enabled by block=boot recovery or auto (from anykernel.sh)
   case $block in
      auto|"") block=boot;;
   esac;
   case $block in
-    boot|recovery|vendor_boot)
+    boot|recovery)
       case $block in
         boot) parttype="ramdisk boot BOOT LNX android_boot bootimg KERN-A kernel KERNEL";;
         recovery) parttype="ramdisk_recovery recovery RECOVERY SOS android_recovery";;
-        vendor_boot) parttype="vendor_boot";;
       esac;
       for name in $parttype; do
         for part in $name$slot $name; do
