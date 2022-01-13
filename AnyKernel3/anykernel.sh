@@ -4,9 +4,9 @@
 ## AnyKernel setup
 # begin properties
 properties() { '
-kernel.string=Persephone by Prashant
+kernel.string=PersephoneSuperfast by Prashant
 kernel.for=KernelForDriver
-kernel.compiler=GCC
+kernel.compiler=Clang
 kernel.made=Prashant @hadesthegod
 kernel.version=4.19.xxx
 message.word=ooflol

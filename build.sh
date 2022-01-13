@@ -60,7 +60,7 @@ CHANNEL_ID=-1001261511799
 KERNEL_DIR=$PWD
 
 # Kernel Version
-VERSION="X2"
+VERSION="SFV1"
 
 # The name of the device for which the kernel is built
 #MODEL="OnePlus Nord"
@@ -238,6 +238,8 @@ msg "|| Uploading ||"
 	cd ..
 	DATE=$(date +"%Y%m%d-%H%M")
 	TELEGRAM=Telegram/telegram
+	BUILD_END=$(date +"%s")
+	DIFF=$(($BUILD_END - $BUILD_START))
 	CHANNEL_ID=-1001261511799
 	"${TELEGRAM}" -f "$(echo "$(pwd)"/AnyKernel3/*.zip)" -c "${CHANNEL_ID}" -H "nacho bc"
 	sendInfo "<b>BUILD took $((DIFF / 60))m:$((DIFF % 60))s </b>" \
