@@ -60,7 +60,7 @@ CHANNEL_ID=-1001261511799
 KERNEL_DIR=$PWD
 
 # Kernel Version
-VERSION="SFV1"
+VERSION="SFV2"
 
 # The name of the device for which the kernel is built
 #MODEL="OnePlus Nord"
@@ -230,7 +230,7 @@ gen_zip() {
 	mv "$KERNEL_DIR"/out/arch/arm64/boot/Image ~/nord/AnyKernel3 
         mv "$KERNEL_DIR"/out/arch/arm64/boot/dtbo.img ~/nord/AnyKernel3
 	cp -af "$KERNEL_DIR"/init.PersSpectrum.rc init.spectrum.rc && sed -i "s/persist.spectrum.kernel.*/persist.spectrum.kernel Persephone/g" init.spectrum.rc
-	zip -r9 $ZIPNAME-A11-$DEVICE-$DATE.zip * -x .git README.md
+	zip -r9 $ZIPNAME-$DEVICE-$DATE.zip * -x .git README.md
 
 ##-----------------Uploading-------------------------------##
 
