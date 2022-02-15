@@ -4652,10 +4652,10 @@ static unsigned long _gpu_set_svm_region(struct kgsl_process_private *private,
 	 * Protect access to the gpuaddr here to prevent multiple vmas from
 	 * trying to map a SVM region at the same time
 	 */
-	spin_lock(&entry->memdesc.gpuaddr_lock);
+	spin_lock(&entry->memdesc.lock);
 
 	if (entry->memdesc.gpuaddr) {
-		spin_unlock(&entry->memdesc.gpuaddr_lock);
+		spin_unlock(&entry->memdesc.lock);
 		return (unsigned long) -EBUSY;
 	}
 
@@ -4663,12 +4663,12 @@ static unsigned long _gpu_set_svm_region(struct kgsl_process_private *private,
 		(uint64_t) size);
 
 	if (ret != 0) {
-		spin_unlock(&entry->memdesc.gpuaddr_lock);
+		spin_unlock(&entry->memdesc.lock);
 		return (unsigned long) ret;
 	}
 
 	entry->memdesc.gpuaddr = (uint64_t) addr;
-	spin_unlock(&entry->memdesc.gpuaddr_lock);
+	spin_unlock(&entry->memdesc.lock);
 
 	entry->memdesc.pagetable = private->pagetable;
 
