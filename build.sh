@@ -60,7 +60,7 @@ CHANNEL_ID=-1001261511799
 KERNEL_DIR=$PWD
 
 # Kernel Version
-VERSION="SFV2"
+VERSION="OOS-SFV3"
 
 # The name of the device for which the kernel is built
 #MODEL="OnePlus Nord"
@@ -105,7 +105,7 @@ DATE=$(TZ=Asia/Kolkata date +"%Y%m%d-%T")
 	if [ $COMPILER = "clang" ]
 	then
 		msg "|| Cloning Clang ||"
-		git clone --depth=1 https://github.com/sohamxda7/llvm-stable.git -b aosp-13.0.3 /home/mani/clang-llvm
+		git clone --depth=1 https://gitlab.com/Panchajanya1999/azure-clang.git /home/mani/clang-llvm
         git clone https://github.com/sohamxda7/llvm-stable -b gcc64 --depth=1 /home/mani/gcc
         git clone https://github.com/sohamxda7/llvm-stable -b gcc32  --depth=1 /home/mani/gcc32
 
@@ -116,7 +116,7 @@ DATE=$(TZ=Asia/Kolkata date +"%Y%m%d-%T")
 	elif [ $COMPILER = "gcc" ]
 	then
 		msg "|| Cloning GCC 9.3.0 baremetal ||"
-		git clone --depth=1 https://github.com/arter97/arm64-gcc.git gcc64
+		git clone --depth=1 https://github.com/mvaisakh/gcc-arm64.git gcc64
 		git clone --depth=1 https://github.com/arter97/arm32-gcc.git gcc32
 		GCC64_DIR=$KERNEL_DIR/gcc64
 		GCC32_DIR=$KERNEL_DIR/gcc32
