@@ -1595,9 +1595,11 @@ static void _sde_crtc_blend_setup(struct drm_crtc *crtc,
 					mixer[i].hw_ctl);
 
 		/* clear dim_layer settings */
-		lm = mixer[i].hw_lm;
-		if (lm->ops.clear_dim_layer)
-			lm->ops.clear_dim_layer(lm);
+		if (sde_crtc_state->num_dim_layers > 0) {
+			lm = mixer[i].hw_lm;
+			if (lm->ops.clear_dim_layer)
+				lm->ops.clear_dim_layer(lm);
+		}
 	}
 
 	_sde_crtc_swap_mixers_for_right_partial_update(crtc);
@@ -2771,7 +2773,6 @@ int bl_to_alpha_dc(int brightness)
 	return alpha;
 }
 
-bool oneplus_dimlayer_hbm_enable;
 int oneplus_get_panel_brightness_to_alpha(void)
 {
 	struct dsi_display *display = get_main_display();
@@ -2780,7 +2781,7 @@ int oneplus_get_panel_brightness_to_alpha(void)
 		return 0;
 	if (oneplus_panel_alpha)
 		return oneplus_panel_alpha;
-    if (oneplus_dimlayer_hbm_enable)
+    if (display->panel->dim_status)
 		return brightness_to_alpha(display->panel->hbm_backlight);
     else
 	return bl_to_alpha_dc(display->panel->hbm_backlight);
@@ -2867,9 +2868,6 @@ ssize_t notify_fppress_store(struct device *dev,
 }
 
 extern int aod_layer_hide;
-extern int oneplus_panel_status;
-extern int backup_dim_status;
-extern bool backup_dimlayer_hbm;
 extern bool HBM_flag;
 extern int dsi_panel_tx_cmd_set(struct dsi_panel *panel,
 				enum dsi_cmd_set_type type);
@@ -2903,8 +2901,6 @@ ssize_t notify_dim_store(struct device *dev,
 	dsi_connector = dsi_display->drm_conn;
 	mode_config = &drm_dev->mode_config;
 	sscanf(buf, "%du", &dim_status);
-	if (oneplus_panel_status == 0)
-		dim_status = 0;
 
 	if(dsi_display->panel->aod_status==0 && (dim_status == 2)){
 		pr_err("fp set it in normal status\n");
@@ -2928,11 +2924,8 @@ ssize_t notify_dim_store(struct device *dev,
 	if (dim_status == oneplus_dim_status)
 		return count;
 	oneplus_dim_status = dim_status;
-	oneplus_dimlayer_hbm_enable = oneplus_dim_status != 0;
-	backup_dimlayer_hbm = oneplus_dimlayer_hbm_enable;
-	backup_dim_status = oneplus_dim_status;
-	pr_err("notify dim %d,aod = %d press= %d aod_hide =%d oneplus_dimlayer_hbm_enable = %d\n",
-		oneplus_dim_status, dsi_display->panel->aod_status, oneplus_onscreenfp_status, aod_layer_hide, oneplus_dimlayer_hbm_enable);
+	pr_err("notify dim %d,aod = %d press= %d aod_hide =%d\n",
+		oneplus_dim_status, dsi_display->panel->aod_status, oneplus_onscreenfp_status, aod_layer_hide);
 	if (oneplus_dim_status == 1 && HBM_flag) {
 		rc = dsi_panel_tx_cmd_set(dsi_display->panel, DSI_CMD_SET_HBM_ON_5);
 		if (rc) {
@@ -5009,12 +5002,8 @@ static int sde_crtc_onscreenfinger_atomic_check(struct sde_crtc_state *cstate,
 		dim_mode = 0;
 	}
 	aod_mode = oneplus_aod_hid;
-	if (oneplus_dim_status == 5 && display->panel->aod_status == 0) {
+	if (oneplus_dim_status == 5 && display->panel->aod_status == 0)
 		dim_mode = 0;
-		oneplus_dim_status = 0;
-		oneplus_dimlayer_hbm_enable = false;
-		pr_err("current dim = %d, oneplus_dimlayer_hbm_enable = %d\n", oneplus_dim_status, oneplus_dimlayer_hbm_enable);
-	}
 
 	for (i = 0; i < cnt; i++) {
 		mode = sde_plane_check_fingerprint_layer(pstates[i].drm_pstate);
@@ -5081,7 +5070,7 @@ static int sde_crtc_onscreenfinger_atomic_check(struct sde_crtc_state *cstate,
     }
 
 	SDE_DEBUG("fp_index=%d,fppressed_index=%d,aod_index=%d\n", fp_index, fppressed_index, aod_index);
-	if (oneplus_dimlayer_hbm_enable || oneplus_force_screenfp || dim_backlight == 1) {
+	if (fp_index >= 0 || fppressed_index >= 0 || oneplus_force_screenfp || dim_backlight == 1) {
 		if (fp_index >= 0 && fppressed_index >= 0) {
 			if (pstates[fp_index].stage >= pstates[fppressed_index].stage) {
 				SDE_ERROR("Bug!!@@@@: fp layer top of fppressed layer\n");
@@ -5118,16 +5107,48 @@ static int sde_crtc_onscreenfinger_atomic_check(struct sde_crtc_state *cstate,
 			zpos++;
 		}
 
-		if (oneplus_dimlayer_hbm_enable)
+		if (fp_index >= 0) {
+			if (dim_mode == 0) {
+				//pstates[fp_index].sde_pstate->property_values[PLANE_PROP_ALPHA].value = 0xff;
+				fp_index = -1;
+			}
+		}
+        if (fppressed_index >= 0) {
+			if (fp_mode == 0) {
+				pstates[fppressed_index].sde_pstate->property_values[PLANE_PROP_ALPHA].value = 0;
+				if(oneplus_aod_fod == 1 && aod_index < 0) {
+					SDE_DEBUG("set reset pstate\n");
+					for (i = 0; i < cnt; i++) {
+						if(i!=fppressed_index ) {
+							if(pstates[i].sde_pstate->property_values[PLANE_PROP_ALPHA].value == 0){
+								pstates[i].sde_pstate->property_values[PLANE_PROP_ALPHA].value = 0xff;
+							}
+						}
+					}
+				}
+				fppressed_index = -1;
+			} else {
+				pstates[fppressed_index].sde_pstate->property_values[PLANE_PROP_ALPHA].value = 0xff;
+			}
+		}
+
+         if (aod_index >= 0) {
+			if (aod_mode == 1) {
+				SDE_DEBUG("aod layer hid");
+                SDE_ATRACE_BEGIN("aod_layer_hid");
+				pstates[aod_index].sde_pstate->property_values[PLANE_PROP_ALPHA].value = 0;
+				aod_index = -1;
+                SDE_ATRACE_END("aod_layer_hid");
+			}
+		}
+
+		if (fp_index >= 0)
 			cstate->fingerprint_mode = true;
 		else
 			cstate->fingerprint_mode = false;
 
-		if (fp_index >= 0)
-			pstates[fp_index].sde_pstate->property_values[PLANE_PROP_ALPHA].value = 0;
-
-		if (sde_crtc_config_fingerprint_dim_layer(&cstate->base, zpos)) {
-			//SDE_ERROR("Failed to config dim layer\n");
+		if ((fp_index >= 0 || dim_backlight > 0) && sde_crtc_config_fingerprint_dim_layer(&cstate->base, zpos)) {
+			SDE_ERROR("Failed to config dim layer\n");
 			return -EINVAL;
 		}
 		if (fppressed_index >= 0)
@@ -5136,7 +5157,6 @@ static int sde_crtc_onscreenfinger_atomic_check(struct sde_crtc_state *cstate,
 			cstate->fingerprint_pressed = false;
 		}
 	} else {
-		cstate->fingerprint_dim_layer = NULL;
 		cstate->fingerprint_pressed = false;
 		cstate->fingerprint_mode = false;
 		for (i = 0; i < cnt; i++) {
@@ -5145,10 +5165,8 @@ static int sde_crtc_onscreenfinger_atomic_check(struct sde_crtc_state *cstate,
 			}
 		}
     }
-	if (fp_mode == 1 && !oneplus_dimlayer_hbm_enable) {
-		cstate->fingerprint_mode = true;
-		cstate->fingerprint_pressed = true;
-		return 0;
+	if (fp_index < 0 && !dim_backlight) {
+		cstate->fingerprint_dim_layer = NULL;
 	}
 
 	return 0;
