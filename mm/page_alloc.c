@@ -4575,6 +4575,9 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
 	unsigned int cpuset_mems_cookie;
 	int reserve_flags;
 	bool woke_kswapd = false;
+#ifdef CONFIG_ONEPLUS_MEM_MONITOR
+	unsigned long oneplus_alloc_start = jiffies;
+#endif
 	bool used_vmpressure = false;
 
 	/*
