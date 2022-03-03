@@ -1399,6 +1399,8 @@ static const struct file_operations proc_write_ps_status_fops = {
 	.owner = THIS_MODULE,
 };
 
+bool is_gaming __read_mostly;
+
 //proc/touchpanel/game_switch_enable
 static ssize_t proc_game_switch_write(struct file *file, const char __user *buffer, size_t count, loff_t *ppos)
 {
@@ -1425,6 +1427,7 @@ static ssize_t proc_game_switch_write(struct file *file, const char __user *buff
 		return count;
 	}
 	sscanf(buf, "%x", &value);
+	is_gaming = value > 0;
 	ts->noise_level = value;
 	ts->game_mode_status = value > 0 ? 1 : 0;
 
