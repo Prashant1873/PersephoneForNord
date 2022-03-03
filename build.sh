@@ -60,7 +60,7 @@ CHANNEL_ID=-1001261511799
 KERNEL_DIR=$PWD
 
 # Kernel Version
-VERSION="OOS-SFV3"
+VERSION="OOS-SFV4"
 
 # The name of the device for which the kernel is built
 #MODEL="OnePlus Nord"
@@ -82,9 +82,12 @@ INCREMENTAL=0
 # Generate a full DEFCONFIG prior building. 1 is YES | 0 is NO(default)
 DEF_REG=0
 
+# Files/artifacts
+FILES=Image.gz-dtb
+
 # Build dtbo.img (select this only if your source has support to building dtbo.img)
 # 1 is YES | 0 is NO(default)
-BUILD_DTBO=1
+BUILD_DTBO=0
 
 # Silence the compilation
 # 1 is YES(default) | 0 is NO
@@ -207,7 +210,7 @@ build_kernel() {
 		OBJCOPY=llvm-objcopy \
 		LD=ld.lld "${MAKE[@]}" 2>&1
 
-		if [ -f "$KERNEL_DIR"/out/arch/arm64/boot/Image ]
+		if [ -f "$KERNEL_DIR"/out/arch/arm64/boot/$FILES]
 	    then
 	    	msg "|| Kernel successfully compiled ||"
 	    	if [ $BUILD_DTBO = 1 ]
@@ -227,9 +230,8 @@ build_kernel() {
 gen_zip() {
 	msg "|| Zipping into a flashable zip ||"
 	cd AnyKernel3
-	mv "$KERNEL_DIR"/out/arch/arm64/boot/Image ~/nord/AnyKernel3 
-        mv "$KERNEL_DIR"/out/arch/arm64/boot/dtbo.img ~/nord/AnyKernel3
-	cp -af "$KERNEL_DIR"/init.PersSpectrum.rc init.spectrum.rc && sed -i "s/persist.spectrum.kernel.*/persist.spectrum.kernel Persephone/g" init.spectrum.rc
+	mv "$KERNEL_DIR"/out/arch/arm64/boot/$FILES ~/nord/AnyKernel3/$FILES 
+        # mv "$KERNEL_DIR"/out/arch/arm64/boot/dtbo.img ~/nord/AnyKernel3
 	zip -r9 $ZIPNAME-$DEVICE-$DATE.zip * -x .git README.md
 
 ##-----------------Uploading-------------------------------##
