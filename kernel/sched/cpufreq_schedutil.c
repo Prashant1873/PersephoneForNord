@@ -33,17 +33,17 @@ static unsigned int default_target_loads[] = {DEFAULT_TARGET_LOAD};
 #endif
 #define DEFAULT_UP_RATE_LIMIT_LP 0
 #define DEFAULT_UP_RATE_LIMIT_HP 1000
-#define DEFAULT_UP_RATE_LIMIT_PR 1000
+#define DEFAULT_UP_RATE_LIMIT_PR 0
 
 #define DEFAULT_DOWN_RATE_LIMIT_LP 0
 #define DEFAULT_DOWN_RATE_LIMIT_HP 1000
-#define DEFAULT_DOWN_RATE_LIMIT_PR 1000
+#define DEFAULT_DOWN_RATE_LIMIT_PR 0
 
 #define DEFAULT_RTG_BOOST_FREQ_LP 0
 #define DEFAULT_RTG_BOOST_FREQ_HP 0
 #define DEFAULT_RTG_BOOST_FREQ_PR 0
 
-#define DEFAULT_HISPEED_LOAD_LP 80
+#define DEFAULT_HISPEED_LOAD_LP 90
 #define DEFAULT_HISPEED_LOAD_HP 100
 #define DEFAULT_HISPEED_LOAD_PR 100
 
@@ -51,7 +51,7 @@ static unsigned int default_target_loads[] = {DEFAULT_TARGET_LOAD};
 #define DEFAULT_HISPEED_FREQ_HP 0
 #define DEFAULT_HISPEED_FREQ_PR 0
 
-#define DEFAULT_PL_LP 1
+#define DEFAULT_PL_LP 0
 #define DEFAULT_PL_HP 0
 #define DEFAULT_PL_PR 0
 
@@ -684,12 +684,7 @@ static unsigned long sugov_get_util(struct sugov_cpu *sg_cpu)
 {
 	struct rq *rq = cpu_rq(sg_cpu->cpu);
 
-#ifdef CONFIG_SCHED_TUNE
 	unsigned long util_cfs = cpu_util_cfs(rq);
-#else
-	unsigned long util_cfs = cpu_util_freq(sg_cpu->cpu, NULL)
-				- cpu_util_rt(rq);
-#endif
 	unsigned long max = arch_scale_cpu_capacity(NULL, sg_cpu->cpu);
 
 	sg_cpu->max = max;
