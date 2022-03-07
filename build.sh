@@ -83,7 +83,7 @@ INCREMENTAL=0
 DEF_REG=0
 
 # Files/artifacts
-FILES=Image.gz-dtb
+FILES=Image-dtb
 
 # Build dtbo.img (select this only if your source has support to building dtbo.img)
 # 1 is YES | 0 is NO(default)
@@ -141,7 +141,10 @@ exports() {
 
 	if [ $COMPILER = "clang" ]
 	then
-		KBUILD_COMPILER_STRING=$("$TC_DIR"/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
+		CLGV="$("$TC_DIR"/bin/clang --version | head -n 1)"
+	  	BINV="$("$TC_DIR"/bin/ld --version | head -n 1)"
+	    	LLDV="$("$TC_DIR"/bin/ld.lld --version | head -n 1)"
+    		export KBUILD_COMPILER_STRING="$CLGV - $BINV - $LLDV"
 		PATH=$TC_DIR/bin:$GC_DIR/bin:$GC2_DIR/bin:$PATH
 	elif [ $COMPILER = "gcc" ]
 	then
@@ -185,8 +188,7 @@ build_kernel() {
 			AR=llvm-ar \
 			OBJDUMP=llvm-objdump \
 			STRIP=llvm-strip \
-                        DTC_EXT=$KERNEL_DIR/dtc
-		)
+                        )
 	elif [ $COMPILER = "gcc" ]
 	then
 		MAKE+=(
@@ -210,7 +212,7 @@ build_kernel() {
 		OBJCOPY=llvm-objcopy \
 		LD=ld.lld "${MAKE[@]}" 2>&1
 
-		if [ -f "$KERNEL_DIR"/out/arch/arm64/boot/$FILES]
+		if [ -f "$KERNEL_DIR"/out/arch/arm64/boot/$FILES ]
 	    then
 	    	msg "|| Kernel successfully compiled ||"
 	    	if [ $BUILD_DTBO = 1 ]
@@ -231,7 +233,7 @@ gen_zip() {
 	msg "|| Zipping into a flashable zip ||"
 	cd AnyKernel3
 	mv "$KERNEL_DIR"/out/arch/arm64/boot/$FILES ~/nord/AnyKernel3/$FILES 
-        # mv "$KERNEL_DIR"/out/arch/arm64/boot/dtbo.img ~/nord/AnyKernel3
+        mv "$KERNEL_DIR"/out/arch/arm64/boot/dtbo.img ~/nord/AnyKernel3
 	zip -r9 $ZIPNAME-$DEVICE-$DATE.zip * -x .git README.md
 
 ##-----------------Uploading-------------------------------##
