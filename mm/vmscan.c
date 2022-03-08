@@ -175,13 +175,13 @@ int kswapd_threads_current = DEF_KSWAPD_THREADS_PER_NODE;
 
 /* set direct swapiness rate ,higher means more swap */
 #ifdef CONFIG_DIRECT_SWAPPINESS
-int vm_swappiness = 80;
-int vm_direct_swapiness = 50;
+int vm_swappiness = 100;
+int vm_direct_swapiness = 80;
 #else
 /*
  * From 0 .. 100.  Higher means more swappy.
  */
-int vm_swappiness = 100;
+int vm_swappiness = 120;
 #endif
 
 /*

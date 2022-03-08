@@ -188,6 +188,7 @@ build_kernel() {
 			AR=llvm-ar \
 			OBJDUMP=llvm-objdump \
 			STRIP=llvm-strip \
+			DTC_EXT=$KERNEL_DIR/dtc
                         )
 	elif [ $COMPILER = "gcc" ]
 	then
