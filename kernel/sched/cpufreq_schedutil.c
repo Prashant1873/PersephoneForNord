@@ -991,7 +991,7 @@ static unsigned int sugov_next_freq_shared(struct sugov_cpu *sg_cpu, u64 time)
 		 */
 		delta_ns = time - j_sg_cpu->last_update;
 		if (delta_ns > stale_ns) {
-			sugov_iowait_reset(j_sg_cpu, last_freq_update_time,
+			sugov_iowait_reset(j_sg_cpu, time,
 					   false);
 			continue;
 		}
