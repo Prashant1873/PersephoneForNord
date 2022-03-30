@@ -71,6 +71,7 @@ struct extcon_dev_data {
 	struct pinctrl *key_pinctrl;
 	struct pinctrl_state *set_state;
 
+	int state;
 };
 
 static struct extcon_dev_data *extcon_data;
@@ -146,6 +147,17 @@ static void extcon_dev_work(struct work_struct *work)
 			extcon_data->edev, 2, key[1]);
 	extcon_set_state_sync(
 			extcon_data->edev, 3, key[2]);
+
+	if (key[0] == 1 && key[2] == 1) {
+		extcon_data->state = 2; //middle position
+
+	} else if (key[0] == 0 && key[2] == 1) {
+		extcon_data->state = 3; //bottom position
+
+	} else if(key[0] == 1 && key[2] == 0) {
+		extcon_data->state = 1; //top position
+	}
+
 	/*op add to fix GCE-7551 begin*/
 	//if (!key[2] ||  !key[1])
 	//	aw8697_op_haptic_stop();
@@ -159,6 +171,22 @@ static void extcon_dev_work(struct work_struct *work)
 	/*op add to fix ISTRACKING-34823 end*/
 }
 
+static ssize_t tri_state_show(struct device *dev,
+        struct device_attribute *attr, char *buf)
+{
+	return snprintf(buf, 256, "%d\n", extcon_data->state);
+}
+
+static DEVICE_ATTR(tri_state, S_IRUGO | S_IWUSR, tri_state_show, NULL);
+
+static struct attribute *tri_key_attributes[] = {
+	&dev_attr_tri_state.attr,
+	NULL
+};
+
+static struct attribute_group tri_key_attribute_group = {
+        .attrs = tri_key_attributes
+};
 
 static irqreturn_t extcon_dev_interrupt(int irq, void *_dev)
 {
@@ -245,6 +273,12 @@ static int tristate_dev_probe(struct platform_device *pdev)
 		goto err_extcon_dev_register;
 	}
 
+	// tri_key node creation error handler
+	ret = sysfs_create_group(&pdev->dev.kobj, &tri_key_attribute_group);
+	if (ret) {
+		pr_err("tri_key:sysfs_create_group failed(%d)\n", ret);
+		return -ENOMEM;
+	}
 
 	/* extcon registration */
 	extcon_data->edev =
