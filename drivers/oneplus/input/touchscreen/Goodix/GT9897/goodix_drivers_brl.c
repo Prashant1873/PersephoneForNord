@@ -2739,7 +2739,7 @@ static void goodix_get_health_info(void *chip_data, struct monitor_data *mon_dat
 
 	mon_data->shield_esd = chip_info->esd_err_count;
 	mon_data->reserve5 =  chip_info->send_cmd_err_count;
-	memcpy(health_local, health_info, sizeof(struct goodix_health_info));
+	memcpy(health_local, health_info, sizeof(struct goodix_health_info*));
 
 	ret = touch_i2c_write_block_u32(chip_info->client,chip_info->ic_info.misc.fw_state_addr,1,&clear_flag);
 	if (ret < 0) {

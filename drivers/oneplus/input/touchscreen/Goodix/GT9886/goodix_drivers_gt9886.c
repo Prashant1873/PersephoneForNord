@@ -2579,7 +2579,7 @@ static void goodix_get_health_info(void *chip_data, struct monitor_data *mon_dat
 		//}
 	}
 
-	memcpy(health_local, health_info, sizeof(struct goodix_health_info));
+	memcpy(health_local, health_info, sizeof(struct goodix_health_info*));
 
 	ret = touch_i2c_write_block(chip_info->client, chip_info->reg_info.GTP_REG_DEBUG, 1, &clear_flag);
 	if (ret < 0) {
