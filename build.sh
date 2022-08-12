@@ -201,6 +201,9 @@ build_kernel() {
 		)
 	fi
 
+    "${TELEGRAM}" -f "$(echo "$(pwd)"/error.log)" -c "${CHANNEL_ID}" -H "build logs"
+    rm -rf error.log 
+	
 	if [ $SILENCE = "1" ]
 	then
 		MAKE+=( -s )
