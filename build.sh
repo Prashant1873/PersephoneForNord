@@ -60,7 +60,7 @@ CHANNEL_ID=-1001261511799
 KERNEL_DIR=$PWD
 
 # Kernel Version
-VERSION="9"
+VERSION="I"
 
 # The name of the device for which the kernel is built
 #MODEL="OnePlus Nord"
@@ -94,7 +94,7 @@ BUILD_DTBO=1
 SILENCE=0
 
 # The name of the Kernel, to name the ZIP
-ZIPNAME="JustAnotherKernel-$VERSION"
+ZIPNAME="Kernel3003-$VERSION"
 
 # Set Date and Time Zone
 DATE=$(TZ=Asia/Kolkata date +"%Y%m%d-%H%M")
@@ -248,7 +248,7 @@ msg "|| Uploading ||"
 	TELEGRAM=Telegram/telegram
 	BUILD_END=$(date +"%s")
 	DIFF=$(($BUILD_END - $BUILD_START))
-	CHANNEL_ID=-1001612164828
+	CHANNEL_ID=-1001261511799
 	"${TELEGRAM}" -f "$(echo "$(pwd)"/AnyKernel3/*.zip)" -c "${CHANNEL_ID}" -H "$DATE -V$VERSION"
 	sendInfo "<b>BUILD took $((DIFF / 60))m:$((DIFF % 60))s </b>" \
 	         "==============================" \
