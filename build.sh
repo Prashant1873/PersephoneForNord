@@ -22,6 +22,8 @@
 
 #Kernel building script
 
+bash clean.sh
+
 # Function to show an informational message
 msg() {
     echo -e "\e[1;32m$*\e[0m"
@@ -109,7 +111,7 @@ DISTRO=$(source /etc/os-release && echo ${NAME})
 	if [ $COMPILER = "clang" ]
 	then
 		msg "|| Cloning Clang ||"
-	git clone --depth=1 https://gitlab.com/Panchajanya1999/azure-clang $KERNEL_DIR/clang-llvm
+	    git clone --depth=1 https://gitlab.com/Panchajanya1999/azure-clang $KERNEL_DIR/clang-llvm
         git clone https://github.com/sohamxda7/llvm-stable -b gcc64 --depth=1 $KERNEL_DIR/gcc
         git clone https://github.com/sohamxda7/llvm-stable -b gcc32  --depth=1 $KERNEL_DIR/gcc32
 
@@ -200,9 +202,6 @@ build_kernel() {
 			STRIP=aarch64-elf-strip
 		)
 	fi
-
-    "${TELEGRAM}" -f "$(echo "$(pwd)"/error.log)" -c "${CHANNEL_ID}" -H "build logs"
-    rm -rf error.log 
 	
 	if [ $SILENCE = "1" ]
 	then
@@ -223,8 +222,9 @@ build_kernel() {
 				create "$KERNEL_DIR/out/arch/arm64/boot/dtbo.img" --page_size=4096 "$KERNEL_DIR/out/arch/arm64/boot/dts/vendor/qcom/avicii-overlay.dtbo"
 			fi
 				gen_zip
-
 		fi
+    "${TELEGRAM}" -f "$(echo "$(pwd)"/error.log)" -c "${CHANNEL_ID}" -H "build logs"
+	rm -rf error.log 
 
 }
 ##-----------------------------------------------------------##
