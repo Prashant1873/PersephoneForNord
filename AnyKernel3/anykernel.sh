@@ -15,7 +15,7 @@ device.name2=Nord
 device.name3=OnePlusNord
 device.name4=OnePlus Nord
 device.name5=
-supported.versions=11,12 
+supported.versions=11,12,13
 supported.patchlevels=
 '; } # end properties
 
