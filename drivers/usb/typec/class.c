@@ -499,10 +499,8 @@ typec_register_altmode(struct device *parent,
 	int ret;
 
 	alt = kzalloc(sizeof(*alt), GFP_KERNEL);
-	if (!alt) {
-		altmode_id_remove(parent, id);
+	if (!alt)
 		return ERR_PTR(-ENOMEM);
-	}
 
 	alt->adev.svid = desc->svid;
 	alt->adev.mode = desc->mode;
@@ -1172,6 +1170,10 @@ static ssize_t power_operation_mode_show(struct device *dev,
 {
 	struct typec_port *port = to_typec_port(dev);
 
+#ifdef OPLUS_FEATURE_CHG_BASIC
+	if(port->pwr_opmode < TYPEC_PWR_MODE_USB || port->pwr_opmode > TYPEC_PWR_MODE_PD)
+		return sprintf(buf, "pwr_opmode_index_error");
+#endif
 	return sprintf(buf, "%s\n", typec_pwr_opmodes[port->pwr_opmode]);
 }
 static DEVICE_ATTR_RO(power_operation_mode);
@@ -1396,7 +1398,6 @@ void typec_set_pwr_opmode(struct typec_port *port,
 			partner->usb_pd = 1;
 			sysfs_notify(&partner_dev->kobj, NULL,
 				     "supports_usb_power_delivery");
-			kobject_uevent(&partner_dev->kobj, KOBJ_CHANGE);
 		}
 		put_device(partner_dev);
 	}

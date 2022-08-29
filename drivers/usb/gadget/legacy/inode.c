@@ -361,7 +361,6 @@ ep_io (struct ep_data *epdata, void *buf, unsigned len)
 				spin_unlock_irq (&epdata->dev->lock);
 
 				DBG (epdata->dev, "endpoint gone\n");
-				wait_for_completion(&done);
 				epdata->status = -ENODEV;
 			}
 		}
@@ -1829,9 +1828,8 @@ dev_config (struct file *fd, const char __user *buf, size_t len, loff_t *ptr)
 	spin_lock_irq (&dev->lock);
 	value = -EINVAL;
 	if (dev->buf) {
-		spin_unlock_irq(&dev->lock);
 		kfree(kbuf);
-		return value;
+		goto fail;
 	}
 	dev->buf = kbuf;
 
@@ -1878,8 +1876,8 @@ dev_config (struct file *fd, const char __user *buf, size_t len, loff_t *ptr)
 
 	value = usb_gadget_probe_driver(&gadgetfs_driver);
 	if (value != 0) {
-		spin_lock_irq(&dev->lock);
-		goto fail;
+		kfree (dev->buf);
+		dev->buf = NULL;
 	} else {
 		/* at this point "good" hardware has for the first time
 		 * let the USB the host see us.  alternatively, if users
@@ -1896,9 +1894,6 @@ dev_config (struct file *fd, const char __user *buf, size_t len, loff_t *ptr)
 	return value;
 
 fail:
-	dev->config = NULL;
-	dev->hs_config = NULL;
-	dev->dev = NULL;
 	spin_unlock_irq (&dev->lock);
 	pr_debug ("%s: %s fail %zd, %p\n", shortname, __func__, value, dev);
 	kfree (dev->buf);
@@ -2058,9 +2053,6 @@ gadgetfs_fill_super (struct super_block *sb, void *opts, int silent)
 	return 0;
 
 Enomem:
-	kfree(CHIP);
-	CHIP = NULL;
-
 	return -ENOMEM;
 }
 

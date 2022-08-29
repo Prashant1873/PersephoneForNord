@@ -834,9 +834,16 @@ static int uas_slave_alloc(struct scsi_device *sdev)
 {
 	struct uas_dev_info *devinfo =
 		(struct uas_dev_info *)sdev->host->hostdata;
+#ifndef OPLUS_FEATURE_CHG_BASIC
+	int maxp;
+#endif
 
 	sdev->hostdata = devinfo;
 
+#ifndef OPLUS_FEATURE_CHG_BASIC
+	maxp = usb_maxpacket(devinfo->udev, devinfo->data_in_pipe, 0);
+	blk_queue_virt_boundary(sdev->request_queue, maxp - 1);
+#endif
 	/*
 	 * The protocol has no requirements on alignment in the strict sense.
 	 * Controllers may or may not have alignment restrictions.
@@ -874,9 +881,6 @@ static int uas_slave_configure(struct scsi_device *sdev)
 	if (devinfo->flags & US_FL_NO_READ_CAPACITY_16)
 		sdev->no_read_capacity_16 = 1;
 
-	/* Some disks cannot handle WRITE_SAME */
-	if (devinfo->flags & US_FL_NO_SAME)
-		sdev->no_write_same = 1;
 	/*
 	 * Some disks return the total number of blocks in response
 	 * to READ CAPACITY rather than the highest block number.
